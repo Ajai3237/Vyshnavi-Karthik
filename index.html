@@ -1057,31 +1057,38 @@
 
       audio.volume = 0.45;
 
-      /* The <audio> tag has autoplay + muted — Chrome always allows muted autoplay.
-         Once the page loads we unmute it so the song plays with sound. */
-      window.addEventListener('load', function () {
+      function unmute() {
         audio.muted = false;
-        if (!audio.paused) {
-          btn.textContent = '♪';
-          btn.classList.add('playing');
-        } else {
-          /* autoplay was blocked entirely — show ▶ for manual tap */
-          btn.textContent = '▶';
+        btn.textContent = '♪';
+        btn.classList.add('playing');
+      }
+
+      /* Listen for the moment audio actually starts playing (autoplay attr fires async).
+         When it does, immediately unmute so sound comes on automatically. */
+      audio.addEventListener('playing', unmute, { once: true });
+
+      /* Also try explicit JS play (belt + suspenders) */
+      audio.muted = true;
+      audio.play().catch(function () {
+        /* Autoplay entirely blocked — start on first interaction with page */
+        function onInteract() {
+          audio.play().then(unmute);
+          document.removeEventListener('click',      onInteract);
+          document.removeEventListener('scroll',     onInteract);
+          document.removeEventListener('touchstart', onInteract);
         }
+        document.addEventListener('click',      onInteract, { once: true });
+        document.addEventListener('scroll',     onInteract, { once: true });
+        document.addEventListener('touchstart', onInteract, { once: true });
       });
 
-      /* Button: start if paused, else toggle mute */
-      btn.onclick = function () {
+      /* Mute button — only toggles mute, never stops song */
+      btn.onclick = function (e) {
+        e.stopPropagation();
         if (audio.paused) {
-          audio.muted = false;
-          audio.play().then(function () {
-            btn.textContent = '♪';
-            btn.classList.add('playing');
-          });
+          audio.play().then(unmute);
         } else if (audio.muted) {
-          audio.muted = false;
-          btn.textContent = '♪';
-          btn.classList.add('playing');
+          unmute();
         } else {
           audio.muted = true;
           btn.textContent = '✕';
