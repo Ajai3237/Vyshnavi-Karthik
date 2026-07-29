@@ -79,10 +79,11 @@
       align-items: center;
       justify-content: center;
       gap: 1.2rem;
+      cursor: pointer;
       transition: opacity 0.9s ease, visibility 0.9s ease;
     }
 
-    #preloader.hidden { opacity: 0; visibility: hidden; }
+    #preloader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
     .pre-script {
       font-family: 'Great Vibes', cursive;
@@ -106,6 +107,18 @@
       text-transform: uppercase;
       color: var(--dim);
       animation: fadeUp 1s ease 0.5s both;
+    }
+
+    .pre-enter {
+      font-family: 'Raleway', sans-serif;
+      font-weight: 200;
+      font-size: 0.55rem;
+      letter-spacing: 0.6em;
+      text-transform: uppercase;
+      color: var(--silver);
+      margin-top: 2rem;
+      opacity: 0;
+      animation: breathe 2.5s ease 1.4s infinite both;
     }
 
     /* ══════════════════════════════
@@ -814,17 +827,18 @@
 </head>
 <body>
 
-  <!-- BACKGROUND MUSIC — autoplay muted is always allowed; JS unmutes it -->
-  <audio id="bgMusic" src="Asset/ks.mp3" loop preload="auto" autoplay muted></audio>
+  <!-- BACKGROUND MUSIC -->
+  <audio id="bgMusic" src="Asset/ks.mp3" loop preload="auto"></audio>
 
   <!-- SMALL MUTE BUTTON -->
   <button id="muteBtn" class="mute-btn" aria-label="Toggle mute" title="Mute / Unmute">♪</button>
 
-  <!-- PRELOADER -->
+  <!-- PRELOADER — click anywhere to enter & start music -->
   <div id="preloader">
     <p class="pre-script">V &amp; K</p>
     <div class="pre-line"></div>
     <p class="pre-label">Wedding Invitation</p>
+    <p class="pre-enter">♪ &nbsp; Tap to Enter</p>
   </div>
 
   <!-- ══════════════════════════════
@@ -1043,52 +1057,40 @@
        SCRIPTS
   ══════════════════════════════ -->
   <script>
-    /* ── Preloader ── */
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        document.getElementById('preloader').classList.add('hidden');
-      }, 1400);
-    });
-
-    /* ── Background music ── */
+    /* ── Preloader + Music start ── */
     (function () {
-      var audio = document.getElementById('bgMusic');
-      var btn   = document.getElementById('muteBtn');
+      var preloader = document.getElementById('preloader');
+      var audio     = document.getElementById('bgMusic');
+      var btn       = document.getElementById('muteBtn');
 
       audio.volume = 0.45;
 
-      function unmute() {
+      function dismiss() {
+        /* Start music the moment user taps — guaranteed user gesture */
         audio.muted = false;
-        btn.textContent = '♪';
-        btn.classList.add('playing');
+        audio.play().then(function () {
+          btn.textContent = '♪';
+          btn.classList.add('playing');
+        });
+        preloader.classList.add('hidden');
       }
 
-      /* Listen for the moment audio actually starts playing (autoplay attr fires async).
-         When it does, immediately unmute so sound comes on automatically. */
-      audio.addEventListener('playing', unmute, { once: true });
-
-      /* Also try explicit JS play (belt + suspenders) */
-      audio.muted = true;
-      audio.play().catch(function () {
-        /* Autoplay entirely blocked — start on first interaction with page */
-        function onInteract() {
-          audio.play().then(unmute);
-          document.removeEventListener('click',      onInteract);
-          document.removeEventListener('scroll',     onInteract);
-          document.removeEventListener('touchstart', onInteract);
-        }
-        document.addEventListener('click',      onInteract, { once: true });
-        document.addEventListener('scroll',     onInteract, { once: true });
-        document.addEventListener('touchstart', onInteract, { once: true });
-      });
+      /* Click anywhere on the preloader to enter */
+      preloader.addEventListener('click', dismiss, { once: true });
 
       /* Mute button — only toggles mute, never stops song */
       btn.onclick = function (e) {
         e.stopPropagation();
         if (audio.paused) {
-          audio.play().then(unmute);
+          audio.muted = false;
+          audio.play().then(function () {
+            btn.textContent = '♪';
+            btn.classList.add('playing');
+          });
         } else if (audio.muted) {
-          unmute();
+          audio.muted = false;
+          btn.textContent = '♪';
+          btn.classList.add('playing');
         } else {
           audio.muted = true;
           btn.textContent = '✕';
