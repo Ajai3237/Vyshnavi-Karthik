@@ -31,6 +31,49 @@
     }
 
     /* ══════════════════════════════
+       MUSIC BUTTON
+    ══════════════════════════════ */
+    .music-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 998;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(180,180,180,0.35);
+      background: rgba(6,6,6,0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: var(--silver);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.3s, color 0.3s, transform 0.3s;
+    }
+
+    .music-btn:hover {
+      border-color: var(--silver);
+      color: var(--white);
+      transform: scale(1.1);
+    }
+
+    .music-icon { line-height: 1; }
+
+    /* Spinning animation when music is playing */
+    .music-btn.playing .music-icon {
+      display: inline-block;
+      animation: musicSpin 4s linear infinite;
+    }
+
+    @keyframes musicSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ══════════════════════════════
        PRELOADER
     ══════════════════════════════ */
     #preloader {
@@ -778,6 +821,16 @@
 </head>
 <body>
 
+  <!-- BACKGROUND MUSIC -->
+  <audio id="bgMusic" loop preload="auto">
+    <source src="Asset/ks.mp3" type="audio/mpeg"/>
+  </audio>
+
+  <!-- MUSIC TOGGLE BUTTON -->
+  <button id="musicBtn" class="music-btn" aria-label="Toggle music">
+    <span class="music-icon" id="musicIcon">♪</span>
+  </button>
+
   <!-- PRELOADER -->
   <div id="preloader">
     <p class="pre-script">V &amp; K</p>
@@ -1007,6 +1060,49 @@
         document.getElementById('preloader').classList.add('hidden');
       }, 1400);
     });
+
+    /* ── Background music ── */
+    (function () {
+      const audio     = document.getElementById('bgMusic');
+      const btn       = document.getElementById('musicBtn');
+      const icon      = document.getElementById('musicIcon');
+      let   isPlaying = false;
+
+      function setPlaying(state) {
+        isPlaying = state;
+        icon.textContent = state ? '♪' : '♩';
+        btn.classList.toggle('playing', state);
+      }
+
+      /* Attempt autoplay after preloader fades */
+      setTimeout(() => {
+        audio.volume = 0.5;
+        audio.play().then(() => {
+          setPlaying(true);
+        }).catch(() => {
+          /* Autoplay blocked — wait for first user interaction */
+          const unlock = () => {
+            audio.play().then(() => { setPlaying(true); });
+            document.removeEventListener('click', unlock);
+            document.removeEventListener('touchstart', unlock);
+          };
+          document.addEventListener('click', unlock);
+          document.addEventListener('touchstart', unlock);
+        });
+      }, 1600);
+
+      /* Toggle on button click */
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (isPlaying) {
+          audio.pause();
+          setPlaying(false);
+        } else {
+          audio.play();
+          setPlaying(true);
+        }
+      });
+    })();
 
     /* ── Scroll reveal ── */
     const revealEls = document.querySelectorAll('.reveal');
