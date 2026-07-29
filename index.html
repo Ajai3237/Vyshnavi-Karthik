@@ -31,46 +31,39 @@
     }
 
     /* ══════════════════════════════
-       MUSIC BUTTON
+       MUSIC BAR
     ══════════════════════════════ */
-    .music-btn {
+    /* Small mute button — bottom-right corner */
+    .mute-btn {
       position: fixed;
-      bottom: 2rem;
-      right: 2rem;
+      bottom: 1.4rem;
+      right: 1.4rem;
       z-index: 998;
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      border: 1px solid rgba(180,180,180,0.35);
-      background: rgba(6,6,6,0.75);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(180,180,180,0.25);
+      background: rgba(6,6,6,0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       color: var(--silver);
-      font-size: 1.1rem;
+      font-size: 1rem;
+      line-height: 1;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: border-color 0.3s, color 0.3s, transform 0.3s;
+      transition: border-color 0.3s, color 0.3s;
     }
 
-    .music-btn:hover {
+    .mute-btn:hover {
       border-color: var(--silver);
       color: var(--white);
-      transform: scale(1.1);
     }
 
-    .music-icon { line-height: 1; }
-
-    /* Spinning animation when music is playing */
-    .music-btn.playing .music-icon {
-      display: inline-block;
-      animation: musicSpin 4s linear infinite;
-    }
-
-    @keyframes musicSpin {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
+    .mute-btn.playing {
+      border-color: rgba(180,180,180,0.45);
+      color: var(--white);
     }
 
     /* ══════════════════════════════
@@ -822,14 +815,10 @@
 <body>
 
   <!-- BACKGROUND MUSIC -->
-  <audio id="bgMusic" loop preload="auto">
-    <source src="Asset/ks.mp3" type="audio/mpeg"/>
-  </audio>
+  <audio id="bgMusic" src="Asset/ks.mp3" loop preload="auto"></audio>
 
-  <!-- MUSIC TOGGLE BUTTON -->
-  <button id="musicBtn" class="music-btn" aria-label="Toggle music">
-    <span class="music-icon" id="musicIcon">♪</span>
-  </button>
+  <!-- SMALL MUTE BUTTON -->
+  <button id="muteBtn" class="mute-btn" aria-label="Toggle mute" title="Mute / Unmute">♪</button>
 
   <!-- PRELOADER -->
   <div id="preloader">
@@ -1063,45 +1052,41 @@
 
     /* ── Background music ── */
     (function () {
-      const audio     = document.getElementById('bgMusic');
-      const btn       = document.getElementById('musicBtn');
-      const icon      = document.getElementById('musicIcon');
-      let   isPlaying = false;
+      var audio = document.getElementById('bgMusic');
+      var btn   = document.getElementById('muteBtn');
 
-      function setPlaying(state) {
-        isPlaying = state;
-        icon.textContent = state ? '♪' : '♩';
-        btn.classList.toggle('playing', state);
-      }
+      audio.volume = 0.45;
 
-      /* Attempt autoplay after preloader fades */
-      setTimeout(() => {
-        audio.volume = 0.5;
-        audio.play().then(() => {
-          setPlaying(true);
-        }).catch(() => {
-          /* Autoplay blocked — wait for first user interaction */
-          const unlock = () => {
-            audio.play().then(() => { setPlaying(true); });
-            document.removeEventListener('click', unlock);
-            document.removeEventListener('touchstart', unlock);
-          };
-          document.addEventListener('click', unlock);
-          document.addEventListener('touchstart', unlock);
-        });
-      }, 1600);
-
-      /* Toggle on button click */
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (isPlaying) {
-          audio.pause();
-          setPlaying(false);
-        } else {
-          audio.play();
-          setPlaying(true);
-        }
+      /* Autoplay trick: muted autoplay is allowed by browsers.
+         We start muted, then immediately unmute once playing. */
+      audio.muted = true;
+      audio.play().then(function () {
+        audio.muted = false;
+        btn.textContent = '♪';
+        btn.classList.add('playing');
+      }).catch(function () {
+        /* Autoplay blocked — show ▶, wait for tap */
+        btn.textContent = '▶';
       });
+
+      /* Tap: if paused start it; otherwise toggle mute */
+      btn.onclick = function () {
+        if (audio.paused) {
+          audio.play().then(function () {
+            audio.muted = false;
+            btn.textContent = '♪';
+            btn.classList.add('playing');
+          });
+        } else if (audio.muted) {
+          audio.muted = false;
+          btn.textContent = '♪';
+          btn.classList.add('playing');
+        } else {
+          audio.muted = true;
+          btn.textContent = '✕';
+          btn.classList.remove('playing');
+        }
+      };
     })();
 
     /* ── Scroll reveal ── */
