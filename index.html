@@ -814,8 +814,8 @@
 </head>
 <body>
 
-  <!-- BACKGROUND MUSIC -->
-  <audio id="bgMusic" src="Asset/ks.mp3" loop preload="auto"></audio>
+  <!-- BACKGROUND MUSIC — autoplay muted is always allowed; JS unmutes it -->
+  <audio id="bgMusic" src="Asset/ks.mp3" loop preload="auto" autoplay muted></audio>
 
   <!-- SMALL MUTE BUTTON -->
   <button id="muteBtn" class="mute-btn" aria-label="Toggle mute" title="Mute / Unmute">♪</button>
@@ -1057,23 +1057,24 @@
 
       audio.volume = 0.45;
 
-      /* Autoplay trick: muted autoplay is allowed by browsers.
-         We start muted, then immediately unmute once playing. */
-      audio.muted = true;
-      audio.play().then(function () {
+      /* The <audio> tag has autoplay + muted — Chrome always allows muted autoplay.
+         Once the page loads we unmute it so the song plays with sound. */
+      window.addEventListener('load', function () {
         audio.muted = false;
-        btn.textContent = '♪';
-        btn.classList.add('playing');
-      }).catch(function () {
-        /* Autoplay blocked — show ▶, wait for tap */
-        btn.textContent = '▶';
+        if (!audio.paused) {
+          btn.textContent = '♪';
+          btn.classList.add('playing');
+        } else {
+          /* autoplay was blocked entirely — show ▶ for manual tap */
+          btn.textContent = '▶';
+        }
       });
 
-      /* Tap: if paused start it; otherwise toggle mute */
+      /* Button: start if paused, else toggle mute */
       btn.onclick = function () {
         if (audio.paused) {
+          audio.muted = false;
           audio.play().then(function () {
-            audio.muted = false;
             btn.textContent = '♪';
             btn.classList.add('playing');
           });
